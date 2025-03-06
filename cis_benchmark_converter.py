@@ -58,14 +58,27 @@ init(autoreset=True)
 
 # Regular expressions for extracting recommendations and cleaning text
 recommendation_pattern = re.compile(r'^\s*(\d+(?:\.\d+)+)\s+(.+)')  # Matches numbers like 1.1.1, 2.2.2.2, etc.
-remove_pattern = re.compile(r'Page\s\d{1,3}|•')
-title_pattern = re.compile(r'^(\d+\.\d+(?:\.\d+)*)\s*(\(L\d+\))?\s*(.*)')
+remove_pattern = re.compile(r'Page\s\d{1,4}|•')
+remove_pattern2 = re.compile(r'\d{1,4}\s*\|\s*P\s*a\s*ge')
+title_pattern = re.compile(r'^([1-9]+\.\d+(?:\.\d+)*)\s*(\(L\d+\))?\s*(.*)')
 
 # Pattern to remove page numbers (e.g., "Page 123")
 page_number_pattern = re.compile(r'\bPage\s+\d+\b', re.IGNORECASE)
 
+# Old page number pattern (e.g., "123 | P a ge")
+old_page_number_pattern = re.compile(r'\d+\s*\|\s*P\s*a\s*ge', re.IGNORECASE)
+
 def remove_page_numbers(text):
     return page_number_pattern.sub('', text)
+
+def remove_old_page_numbers(text):
+    return old_page_number_pattern.sub('', text)
+
+# Clean text by removing page numbers
+def clean_page_numbers(text):
+    text = remove_page_numbers(text)
+    text = remove_old_page_numbers(text)
+    return text
 
 # Sections to extract
 sections = [
@@ -199,8 +212,8 @@ def read_pdf(input_file):
         total_pages = len(pdf.pages)
         extraction_started = False
         
-        # Start reading from page 10 to skip the table of contents
-        for page_number, page in enumerate(pdf.pages[9:], start=10):
+        # Start reading from page 5 to skip the table of contents
+        for page_number, page in enumerate(pdf.pages[5:], start=6):
             page_text = page.extract_text()
             
             # Display progress
@@ -217,7 +230,7 @@ def read_pdf(input_file):
                     break
                 text.append(page_text)
 
-    log_info("\nCompleted reading the PDF file.")
+    log_info("Completed reading the PDF file.")
     return '\n'.join(text)
 
 def find_profile_applicability(lines, start_index, max_depth=10):
@@ -249,7 +262,7 @@ def extract_recommendations(text):
 
     while current_index < len(lines):
         line = lines[current_index].strip()
-        line = remove_page_numbers(line)  # Remove any page number mentions
+        line = clean_page_numbers(line)  # Remove any page number mentions
 
         # Utilisation dans le contexte principal
         title_match = title_pattern.match(line)
@@ -274,7 +287,9 @@ def extract_recommendations(text):
                     not title_pattern.match(lines[current_index + 1].strip())
                 ):
                     current_index += 1
-                    current_recommendation['Title'] += " " + lines[current_index].strip()
+                    additional_line = lines[current_index].strip()
+                    additional_line = clean_page_numbers(additional_line)
+                    current_recommendation['Title'] += " " + additional_line
 
         # Capture sections for the current recommendation
         for section in sections:
@@ -303,7 +318,7 @@ def extract_section(lines, start_index, section_name):
     current_index = start_index + 1
     while current_index < len(lines):
         line = lines[current_index].strip()
-        line = remove_page_numbers(line)  # Clean each line of page numbers
+        line = clean_page_numbers(line)  # Clean each line of page numbers
 
         # Stop at new section, title, or "CIS Controls"
         if any(line.startswith(sec) for sec in sections) or title_pattern.match(line) or 'CIS Controls' in line:
