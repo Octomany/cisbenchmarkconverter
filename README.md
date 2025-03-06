@@ -4,6 +4,11 @@
 **LinkedIn:** [Maxime Beauchamp](https://www.linkedin.com/in/maxbeauchamp/)  
 **Date Created:** 2024-11-06
 
+Modifications:
+**Author:** UnBonWhisky / Flavien Fouqueray  
+**LinkedIn:** [Flavien Fouqueray](https://www.linkedin.com/in/ffouqueray/)  
+**Date Last Edition:** 2025-03-06
+
 ## Description
 
 `CIS Benchmark Converter` is a Python script designed to extract recommendations from CIS Benchmark PDF documents and export them into CSV or Excel format. The output provides a structured, easy-to-read table format that simplifies compliance checks and reviews.
