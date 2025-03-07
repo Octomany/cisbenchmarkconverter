@@ -60,7 +60,7 @@ init(autoreset=True)
 recommendation_pattern = re.compile(r'^\s*(\d+(?:\.\d+)+)\s+(.+)')  # Matches numbers like 1.1.1, 2.2.2.2, etc.
 remove_pattern = re.compile(r'Page\s\d{1,4}|•')
 remove_pattern2 = re.compile(r'\d{1,4}\s*\|\s*P\s*a\s*ge')
-title_pattern = re.compile(r'^([1-9]+\.\d+(?:\.\d+)*)\s*(\(L\d+\))?\s*(.*)')
+title_pattern = re.compile(r'^([1-9]\d{0,1}\.\d+(?:\.\d+)*)\s*(\(L\d+\))?\s*(.*)')
 
 # Pattern to remove page numbers (e.g., "Page 123")
 page_number_pattern = re.compile(r'\bPage\s+\d+\b', re.IGNORECASE)
