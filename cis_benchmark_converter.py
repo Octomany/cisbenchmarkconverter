@@ -225,7 +225,7 @@ def read_pdf(input_file):
                     log_debug(f"Recommendations section detected. Starting extraction... (This may take a while)")
             
             if extraction_started:
-                if "Appendix: Summary Table" in page_text or "Checklist" in page_text:
+                if "Appendix: Summary Table" in page_text or ("Checklist" in page_text and not any(title_pattern.match(line) for line in page_text.splitlines() if "Checklist" in line)):
                     log_debug("End of Recommendations section reached.")
                     break
                 text.append(page_text)
