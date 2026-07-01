@@ -192,7 +192,7 @@ def find_profile_applicability(lines: List[str], start_index: int, max_depth: in
             return False
     return False
 
-def extract_section(lines: List[str], start_index: int, section_name: str) -> Tuple[str, int]:
+def extract_section(lines: List[str], start_index: int, section_name: str, with_newlines: bool = False) -> Tuple[str, int]:
     """
     Extract the content of a section until a new section header, a new recommendation title,
     or a mention of "CIS Controls" is encountered.
@@ -220,10 +220,13 @@ def extract_section(lines: List[str], start_index: int, section_name: str) -> Tu
 
         content.append(line)
         current_index += 1
+    
+    if with_newlines:
+        return '\n'.join(content).strip(), current_index
+    else:
+        return ' '.join(content).strip(), current_index
 
-    return ' '.join(content).strip(), current_index
-
-def extract_recommendations(full_text: str) -> List[Dict[str, str]]:
+def extract_recommendations(full_text: str, with_newlines: bool = False) -> List[Dict[str, str]]:
     """
     Parse the concatenated PDF text to extract recommendations.
 
@@ -263,7 +266,7 @@ def extract_recommendations(full_text: str) -> List[Dict[str, str]]:
         # Extract standard sections (Profile Applicability, Description, etc.)
         for sec in SECTIONS_WITHOUT_CIS:
             if line.startswith(sec):
-                content, next_index = extract_section(lines, current_index, sec)
+                content, next_index = extract_section(lines, current_index, sec, with_newlines)
                 # e.g. "Additional Information:" -> key = "Additional Information"
                 current_recommendation[sec[:-1]] = content
                 current_index = next_index - 1
@@ -428,7 +431,7 @@ def main() -> None:
     pdf_text = read_pdf(input_file, start_page=args.start_page)
 
     # Extract recommendations from the raw PDF text
-    recommendations = extract_recommendations(pdf_text)
+    recommendations = extract_recommendations(pdf_text, output_format == "excel")
 
     # Write the extracted data to CSV, Excel, or JSON
     write_output(recommendations, output_file, output_format, title, version)
