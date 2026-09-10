@@ -106,6 +106,44 @@ def generate_unique_filename(base_name: str, extension: str) -> str:
         counter += 1
     return str(file_path)
 
+def extract_policy_name_and_recommended_setting(title: str) -> Tuple[str, str]:
+    """
+    Extract policy name and recommended setting from a recommendation title.
+    """
+    clean_title = remove_page_numbers(title).strip()
+
+    policy_name = ""
+    recommended_setting = ""
+
+    policy_match = re.search(
+        r"^(?:Ensure|Configure)\s+['\"](?P<policy>.+?)['\"]",
+        clean_title,
+        re.IGNORECASE
+    )
+    if policy_match:
+        policy_name = policy_match.group("policy").strip()
+    else:
+        fallback_policy_match = re.search(r"['\"](?P<policy>.+?)['\"]", clean_title)
+        if fallback_policy_match:
+            policy_name = fallback_policy_match.group("policy").strip()
+
+    setting_match = re.search(
+        r"\bis set to\s+['\"](?P<setting>.+?)['\"]",
+        clean_title,
+        re.IGNORECASE
+    )
+    if setting_match:
+        recommended_setting = setting_match.group("setting").strip()
+
+    marker_match = re.search(r"\b(DC\s+Only|MS\s+Only)\b", clean_title, re.IGNORECASE)
+    if marker_match and policy_name:
+        marker_value = marker_match.group(1).upper().replace(" ", "")
+        normalized_marker = "DC Only" if marker_value == "DCONLY" else "MS Only"
+        if normalized_marker.lower() not in policy_name.lower():
+            policy_name = f"{policy_name} ({normalized_marker})"
+
+    return policy_name, recommended_setting
+
 # -----------------------------------------------------------------------------------
 # PDF Extraction Functions
 # -----------------------------------------------------------------------------------
@@ -260,6 +298,12 @@ def extract_recommendations(full_text: str) -> List[Dict[str, str]]:
                     current_index += 1
                     current_recommendation['Title'] += " " + lines[current_index].strip()
 
+                policy_name, recommended_setting = extract_policy_name_and_recommended_setting(
+                    current_recommendation['Title']
+                )
+                current_recommendation['Policy Name'] = policy_name
+                current_recommendation['Recommended Setting'] = recommended_setting
+
         # Extract standard sections (Profile Applicability, Description, etc.)
         for sec in SECTIONS_WITHOUT_CIS:
             if line.startswith(sec):
@@ -301,7 +345,14 @@ def write_output(
         version         : Document version (extracted from PDF).
     """
     logging.info(f"Writing output to {output_file} in {output_format.upper()} format...")
-    headers: List[str] = ['Compliance Status', 'Number', 'Level', 'Title']
+    headers: List[str] = [
+        'Compliance Status',
+        'Number',
+        'Level',
+        'Title',
+        'Policy Name',
+        'Recommended Setting'
+    ]
     headers += [sec[:-1] for sec in SECTIONS_WITHOUT_CIS]  # remove trailing colon
 
     if output_format == 'csv':
@@ -363,7 +414,9 @@ def write_output(
         sheet.column_dimensions['B'].width = 8
         sheet.column_dimensions['C'].width = 8
         sheet.column_dimensions['D'].width = 50
-        for col in range(5, len(headers) + 1):
+        sheet.column_dimensions['E'].width = 50
+        sheet.column_dimensions['F'].width = 40
+        for col in range(7, len(headers) + 1):
             col_letter = get_column_letter(col)
             sheet.column_dimensions[col_letter].width = 10
         try:
