@@ -416,6 +416,8 @@ def main() -> None:
 
     # Prepare file paths
     input_file: Path = args.input
+    if not input_file.is_file():
+        parser.error(f"Input file does not exist: {input_file}")
     output_format: str = args.format
     base_name: str = input_file.stem
     extension: str = "csv" if output_format == "csv" else ("xlsx" if output_format == "excel" else "json")
